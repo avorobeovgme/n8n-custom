@@ -17,9 +17,8 @@ RUN npm install -g n8n
 # Install TDLib prebuilt binaries globally so libtdjson.so is available at runtime
 RUN npm install -g @telepilotco/tdlib-binaries-prebuilt
 
-# Create n8n user and working directories
-RUN useradd -m -u 1000 node && \
-    mkdir -p /home/node/.n8n && \
+# Ensure n8n directories exist and are owned by node user (node user already exists in base image)
+RUN mkdir -p /home/node/.n8n && \
     chown -R node:node /home/node
 
 USER node
