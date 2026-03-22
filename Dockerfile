@@ -1,22 +1,30 @@
-FROM n8nio/n8n:latest
+FROM node:20-bullseye
 
-USER root
+# Install system dependencies required for TDLib and general tooling
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    ca-certificates \
+    libstdc++6 \
+    build-essential \
+    python3 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create a startup wrapper script that installs the package before running n8n
-RUN mkdir -p /startup && cat > /startup/entrypoint.sh << 'EOF'
-#!/bin/sh
-set -e
+# Install n8n globally
+RUN npm install -g n8n
 
-# Install the tdlib package locally in the n8n directory
-cd /home/node/.n8n
-npm install @telepilotco/tdlib-binaries-prebuilt 2>/dev/null || true
+# Install TDLib prebuilt binaries globally so libtdjson.so is available at runtime
+RUN npm install -g @telepilotco/tdlib-binaries-prebuilt
 
-# Run the original n8n entrypoint
-exec /docker-entrypoint.sh "$@"
-EOF
-
-RUN chmod +x /startup/entrypoint.sh
+# Create n8n user and working directories
+RUN useradd -m -u 1000 node && \
+    mkdir -p /home/node/.n8n && \
+    chown -R node:node /home/node
 
 USER node
+WORKDIR /home/node
 
-ENTRYPOINT ["/startup/entrypoint.sh"]
+EXPOSE 5678
+
+CMD ["n8n", "start"]
